@@ -4,7 +4,7 @@
 #include "Enemy.h"
 #include <memory>
 
-enum pState { EDGE, FIELD };
+enum pState { EDGE, FIELD, HIT };
 class Player
 {
 	Point pos;
@@ -12,11 +12,11 @@ class Player
 	LONG speed;
 	RECT screenRect; // 화면 크기
 	int lineIdx;//현재 위에있는 선의 인덱스
-	int frame;
+	int frame, maxframe = 6;
 	int dir; // 움직이고 있는 방향
 	bool onSpace; // 스페이스를 누른상태인지
 	
-
+	Point hitPos;
 	int state;
 	int hp;
 

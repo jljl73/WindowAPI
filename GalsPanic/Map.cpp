@@ -1,10 +1,10 @@
 #include "Map.h"
 #include <algorithm>
 // 숨겨진 그림의 전부
-void Map::DrawAll(Graphics & graphics)
+void Map::DrawAll(Graphics & graphics, const WCHAR* p)
 {
 	Image *pImg = nullptr;
-	pImg = Image::FromFile((WCHAR*)L"img/지수.jpg");
+	pImg = Image::FromFile(p);
 	if (!pImg)
 		return;
 
@@ -17,10 +17,10 @@ void Map::DrawAll(Graphics & graphics)
 }
 
 // 공개된 공간을 제외하고 전부 가림
-void Map::DrawOpen(Graphics & graphics, RECT &screenRect)
+void Map::DrawOpen(Graphics & graphics, RECT &screenRect, const WCHAR* p)
 {
 	Image *pImg = nullptr;
-	pImg = Image::FromFile((WCHAR*)L"img/제니.jpg");
+	pImg = Image::FromFile(p);
 	if (!pImg)
 		return;
 
@@ -42,7 +42,7 @@ void Map::DrawOpen(Graphics & graphics, RECT &screenRect)
 
 	if (1)
 	{
-		Pen pen(Color(255, 255, 0, 0));
+		Pen pen(Color(255, 0, 180, 0));
 		GraphicsPath path;
 
 		int i = 0;

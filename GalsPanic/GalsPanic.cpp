@@ -100,7 +100,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   HWND hWnd = CreateWindowW(szWindowClass, _T("Gals Panic - 이동:방향키, 선택:Enter, Space"), WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, 720, 720, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
@@ -145,14 +145,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_KEYDOWN:
     {
+		if (gm.getState() == SELECT)
+			gm.Select(wParam);
+
 		if (wParam != VK_RETURN)
 			break;
 
         switch (gm.getState())
         {
         case START:
-            gm.Transition(INGAME);
+            gm.Transition(SELECT);
             break;
+		case SELECT:
+			gm.Transition(INGAME);
+			break;
         case END:
             gm.Transition(START);
             break;

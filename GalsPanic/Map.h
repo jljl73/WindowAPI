@@ -15,8 +15,8 @@ public:
 	~Map() {
 	}
 
-	void DrawAll(Graphics &graphics);
-	void DrawOpen(Graphics &graphics, RECT&);
+	void DrawAll(Graphics &graphics, const WCHAR* p);
+	void DrawOpen(Graphics & graphics, RECT &screenRect, const WCHAR* p);
 	void DeleteDuplicate();
 	bool push_back(Point);
 	int OnEdge(Point&);

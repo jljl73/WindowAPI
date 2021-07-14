@@ -1,20 +1,37 @@
 #include "GameManager.h"
+GameManager::GameManager()
+{
+	path.push_back(L"img/map1.jpg");
+	path.push_back(L"img/map2.jpg");
+	path.push_back(L"img/map3.jpg");
+	path.push_back(L"img/map4.jpg");
+}
+
 // 초기화
 void GameManager::Init()
 {
+	// UI
+	oldTime = GetTickCount();
+	gtime = 100000;
+	ui.SetScreenRect(screenRect);
+	
 	Point p = { 100, 100 };
-	map.push_back(p);
+	map.push_back(Point(100, 100));
+
+	// Player
 	// 위치, 화면 크기
 	player = make_unique<Player>(p, screenRect);
+
+	// Enemy
 	// 위치 속도 반지름
-	//unique_ptr<Enemy> enemy;
-	for (int i = 0; i < 4; ++i)
+
+	for (int i = 0; i < 4 + select; ++i)
 	{
-		Point e = { 200 + rand()%400, 200 + rand() % 400 };
-		//enemy = make_unique<Enemy>(e, 10, 5);
+		Point e = { 200 + rand() % 400, 200 + rand() % 400 };
 		enemies.push_back(make_unique<Enemy>(e, 10, 5));
 	}
 
+	// Map
 	p.X = 200;
 	map.push_back(p);
 	p.Y = 200;
@@ -38,10 +55,13 @@ void GameManager::Update()
 		return;
 
 	DWORD newTime = GetTickCount();
-	static DWORD oldTime = newTime;
+	
 
 	if (newTime - oldTime < 34)
+	{
 		return;
+	}
+	gtime -= newTime - oldTime;
 	oldTime = newTime;
 
 	static int count = 0;
@@ -87,6 +107,11 @@ void GameManager::Update()
 		Transition(CLEAR);
 		GameReset();
 	}
+	if (gtime < 0)
+	{
+		Transition(OVER);
+		GameReset();
+	}
 }
 // 더블버퍼링 
 void GameManager::DrawBitmapDoubleBuffering(HWND hWnd, HDC hdc)
@@ -94,8 +119,7 @@ void GameManager::DrawBitmapDoubleBuffering(HWND hWnd, HDC hdc)
 	HDC hMemDC;
 	HBITMAP hOldBitmap;
 	//int bx, by;
-	HDC hMemDC2;
-	HBITMAP hOldBitmap2;
+
 
 	hMemDC = CreateCompatibleDC(hdc);
 	if (!hMemDC)
@@ -131,6 +155,29 @@ void GameManager::Transition(int _state)
 	GameReset();
 }
 
+void GameManager::Select(int key)
+{
+	switch (key)
+	{
+	case VK_UP:
+		select -= 2;
+		break;
+	case VK_DOWN:
+		select += 2;
+		break;
+	case VK_LEFT:
+		--select;
+		break;
+	case VK_RIGHT:
+		++select;
+		break;
+	}
+	if (select < 0)
+		select += 4;
+	else if (select > 3)
+		select -= 4;
+}
+
 //GDI+
 void GameManager::GDI_Init()
 {
@@ -146,6 +193,9 @@ void GameManager::GDI_Draw(HDC hdc)
 	{
 	case START:
 		DrawStartScreen(graphics);
+		break;
+	case SELECT:
+		DrawSelectScreen(graphics);
 		break;
 	case INGAME:
 		DrawGameScreen(graphics);
@@ -193,10 +243,33 @@ void GameManager::DrawStartScreen(Graphics &graphics)
 		delete pImg;
 }
 
+void GameManager::DrawSelectScreen(Graphics & graphics)
+{
+	Image *pImg = Image::FromFile((WCHAR*)L"img/Empty.jpg");
+	
+	graphics.DrawImage(pImg, 0, 0, screenRect.right, screenRect.bottom);
+	delete[] pImg;
+	
+	int w = 144;
+	int h = 144;
+
+	Pen pen(Color(255, 0, 255, 255));
+
+	for (int i = 0; i < 4; ++i)
+	{
+		pImg = Image::FromFile(path[i]);
+
+		graphics.DrawImage(pImg, (2 * (i % 2) + 1) * w, (2 * (i / 2) + 1) * h, w, h);
+		if (i == select)
+			graphics.DrawRectangle(&pen, (2 * (i % 2) + 1) * w, (2 * (i / 2) + 1) * h, w, h);
+		delete[] pImg;
+	}
+}
+
 void GameManager::DrawGameScreen(Graphics& graphics)
 {
-	map.DrawAll(graphics);
-	map.DrawOpen(graphics, screenRect);
+	map.DrawAll(graphics, path[select]);
+	map.DrawOpen(graphics, screenRect, path[select]);
 	player->Draw(graphics);
 
 	for (auto enemy = enemies.begin(); enemy != enemies.end(); enemy++)
@@ -206,6 +279,7 @@ void GameManager::DrawGameScreen(Graphics& graphics)
 
 	ui.DrawScore(graphics, score);
 	ui.DrawHP(graphics, player->getHP());
+	ui.DrawTime(graphics, gtime);
 	if (player->getHP() < 1)
 	{
 		Transition(OVER);
@@ -265,14 +339,14 @@ void GameManager::DrawOverScreen(Graphics& graphics)
 	static int ct = 0;
 	if (ct++ == 30)
 	{
-		Transition(END);
+		Transition(START);
 		ct = 0;
 	}
 }
 
 void GameManager::DrawEndScreen(Graphics& graphics)
 {
-	map.DrawAll(graphics);
+	map.DrawAll(graphics, path[select]);
 	/*Image* pImg = nullptr;
 
 	pImg = Image::FromFile((WCHAR*)L"img/End.jpg");

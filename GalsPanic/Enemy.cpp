@@ -14,7 +14,7 @@ void Enemy::Draw(Graphics& graphics)
 	ImageAttributes imgAttr;
 	imgAttr.SetColorKey(Color(255, 116, 110), Color(255, 116, 111));
 
-	int w = 48;
+	int w = 49;
 	int h = 38;
 	graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
 		standard_x + w * frame, standard_y,
@@ -29,15 +29,15 @@ void Enemy::Draw(Graphics& graphics)
 void Enemy::NextFrame()
 {
 	++frame;
-	if (frame > 6)
+	if (frame > 13)
 		frame = 0;
 }
 
 void Enemy::Move(Map &map, Player &player)
 {
 	Point nextPoint;
-	nextPoint.X = pos.X + speed * cos(dir);
-	nextPoint.Y = pos.Y + speed * sin(dir);
+	nextPoint.X = pos.X + (LONG)(speed * cos(dir));
+	nextPoint.Y = pos.Y + (LONG)(speed * sin(dir));
 
 	if (!isInPolygon(nextPoint, map.points))
 	{

@@ -20,7 +20,7 @@ public:
 		speed(_speed), radius(_radius) , frame(0)
 	{
 		pImg = 0;
-		dir = 1;
+		dir = rand();
 	}
 
 	Point getPos() { return pos; }
