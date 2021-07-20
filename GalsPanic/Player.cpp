@@ -148,7 +148,7 @@ void Player::Move(Map &map, int _d)
 		if(dir != _d)
 			newPoints.push_back(pos);
 
-		if(onEdge(tP, newPoints) == -1)// 바로 뒤로 다시가는거 방지
+ 		if(onEdge(tP, newPoints) == -1)// 바로 뒤로 다시가는거 방지
 			pos = tP;
 	}
 
@@ -159,6 +159,8 @@ void Player::BackTrack()
 {
 	if (state == FIELD && !onSpace && !newPoints.empty())
 	{
+		dir = -1;
+
 		Point tp = newPoints.back();
 		if(isSame(tp, pos))
 			newPoints.erase(newPoints.end() - 1);
@@ -188,12 +190,6 @@ void Player::BackTrack()
 
 void Player::EatArea(Map &map, int end)
 {
-	//if (newPoints.size() < 2)
-	//{
-	//	newPoints.clear();
-	//	return;
-	//}
-
 	int area = getArea(newPoints);
 
 	vector<Point> mapPoints2(map.points);
@@ -204,9 +200,13 @@ void Player::EatArea(Map &map, int end)
 	int area2 = AddPoint(mapPoints2, newPoints2, end, lineIdx);
 
 	if (area2 > area1)
-		map.points = mapPoints2;
+   		map.points = mapPoints2;
 
-	//map.DeleteDuplicate();
+
+	if (area1 != 0 && area2 != 0 && area1 != area2)
+	{
+		sound.Play(500, false);
+	}
 }
 
 void Player::NextFrame()
@@ -228,4 +228,6 @@ void Player::Hit()
 	newPoints.clear();
 	state = HIT;
 	frame = 0;
+
+	sound2.Play(500, false);
 }

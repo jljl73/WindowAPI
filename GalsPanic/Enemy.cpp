@@ -4,22 +4,39 @@ const double PI = acos(-1);
 
 void Enemy::Draw(Graphics& graphics)
 {
+	ImageAttributes imgAttr;
+	imgAttr.SetColorKey(Color(255, 116, 110), Color(255, 116, 111));
+	
 	pImg = Image::FromFile((WCHAR*)L"img/Enemy.png");
 	if (!pImg)
 		return;
 
-	int standard_x = 36;
-	int standard_y = 16;
+	if (type == 0)
+	{
+		int standard_x = 36;
+		int standard_y = 16;
 
-	ImageAttributes imgAttr;
-	imgAttr.SetColorKey(Color(255, 116, 110), Color(255, 116, 111));
+		int w = 49;
+		int h = 38;
 
-	int w = 49;
-	int h = 38;
-	graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
-		standard_x + w * frame, standard_y,
-		w, h,
-		UnitPixel, &imgAttr);
+		graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
+			standard_x + w * frame, standard_y,
+			w, h,
+			UnitPixel, &imgAttr);
+	}
+	else
+	{
+		int standard_x = 536;
+		int standard_y = 360;
+
+		int w = 33;
+		int h = 33;
+		graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
+			standard_x + w * frame, standard_y,
+			w, h,
+			UnitPixel, &imgAttr);
+	}
+	
 
 	if (pImg)
 		delete[] pImg;
@@ -29,8 +46,12 @@ void Enemy::Draw(Graphics& graphics)
 void Enemy::NextFrame()
 {
 	++frame;
-	if (frame > 13)
+	if (frame > maxframe)
+	{
+		if (state == 1)
+			Transition(2);
 		frame = 0;
+	}
 }
 
 void Enemy::Move(Map &map, Player &player)
@@ -168,5 +189,88 @@ void Enemy::CheckCollisionWithNewMap(Player &player, Point &nextPoint)
 	{
 		player.Hit();
 	}
+
+}
+
+void Enemy::Transition(int _state)
+{
+	state = _state;
+	frame = 0;
+}
+
+//
+// Red:
+//
+void Enemy_Red::Draw(Graphics & graphics)
+{
+	ImageAttributes imgAttr;
+	imgAttr.SetColorKey(Color(255, 116, 110), Color(255, 116, 111));
+	pImg = Image::FromFile((WCHAR*)L"img/Enemy.png");
+	if (!pImg)
+		return;
+
+	int standard_x = 36;
+	int standard_y = 16;
+
+	int w = 49;
+	int h = 38;
+
+	graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
+		standard_x + w * frame, standard_y,
+		w, h,
+		UnitPixel, &imgAttr);
+
+	if (pImg)
+		delete[] pImg;
+
+}
+
+void Enemy_Red::Move(Map & map, Player & player)
+{
+
+	Point nextPoint;
+	nextPoint.X = pos.X + (LONG)(speed * cos(dir));
+	nextPoint.Y = pos.Y + (LONG)(speed * sin(dir));
+
+	CheckCollisionWithNewMap(player, nextPoint);
+	pos = nextPoint;
+
+	if (rand() % 30 == 0)
+		RandomMove();
+}
+
+
+//
+// Dia:
+// 
+void Enemy_Dia::Draw(Graphics & graphics)
+{
+	ImageAttributes imgAttr;
+	imgAttr.SetColorKey(Color(255, 116, 110), Color(255, 116, 111));
+
+	pImg = Image::FromFile((WCHAR*)L"img/Enemy.png");
+	if (!pImg)
+		return;
+
+	int standard_x = 536;
+	int standard_y = 360;
+	int w = 33;
+	int h = 33;
+
+	if (state)
+	{
+		standard_x = 524;
+		standard_y = 393;
+		w = 38;
+		h = 33;
+	}
+
+	graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
+		standard_x + w * frame, standard_y,
+		w, h,
+		UnitPixel, &imgAttr);
+
+	if (pImg)
+		delete[] pImg;
 
 }

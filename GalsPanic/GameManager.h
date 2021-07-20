@@ -6,6 +6,7 @@
 #include "Map.h"
 #include "Enemy.h"
 #include "UI.h"
+#include "Sound.h"
 #include <memory>
 
 using namespace std;
@@ -17,29 +18,33 @@ enum gState { START, SELECT, INGAME, CLEAR, OVER, END };
 class GameManager
 {
 	ULONG_PTR					g_GdiToken;
+	HBITMAP						hDoubleBufferImage;
+	HWND						hWnd;
+
 	unique_ptr<Player>			player;
 	vector<unique_ptr<Enemy>>	enemies;
-
 	vector<const WCHAR*>		path;
 	Map							map;
+
 	UI							ui;
-	HBITMAP						hDoubleBufferImage;
+	Sound						bgm, effect, effect2;
+
 	int							score;
 	int							state;
 	int							select;
 	DWORD						oldTime;
 	int							gtime;
+
 public:
 	GameManager();
-	
 	RECT						screenRect;
 
-	void						Init();
+	void						Init(HWND);
 	void						GameReset();
 	void						Update();
 	void						DrawBitmapDoubleBuffering(HWND hWnd, HDC hdc);
-	void						DestroyEnemy();
 	void						Transition(int _state);
+
 	void						Select(int key);
 	void						GDI_Init();
 	void						GDI_Draw(HDC hdc);

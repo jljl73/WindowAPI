@@ -19,11 +19,6 @@ LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 // 전역 변수
-//ULONG_PTR				g_GdiToken;
-//unique_ptr<Player>		player;
-//Map						map;
-//HBITMAP					hDoubleBufferImage;
-//RECT					screenRect;
 GameManager             gm;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -100,7 +95,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
-   HWND hWnd = CreateWindowW(szWindowClass, _T("Gals Panic - 이동:방향키, 선택:Enter, Space"), WS_OVERLAPPEDWINDOW,
+   HWND hWnd = CreateWindowW(szWindowClass, _T("Gals Panic - 이동: 방향키, 선택: Enter, A: Space"), WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, 720, 720, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
@@ -139,7 +134,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	{
 		SetTimer(hWnd, 1, 34, NULL);
 		GetClientRect(hWnd, &gm.screenRect);
-        gm.Init();
+        gm.Init(hWnd);
 	}
 		break;
 

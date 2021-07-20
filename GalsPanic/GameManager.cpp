@@ -1,6 +1,11 @@
 #include "GameManager.h"
 GameManager::GameManager()
 {
+	bgm.Open(hWnd, TEXT("sounds/bgm.mp3"));
+	bgm.Play(100, true);
+	effect.Open(hWnd, TEXT("sounds/clear.mp3"));
+	effect2.Open(hWnd, TEXT("sounds/gameover.mp3"));
+
 	path.push_back(L"img/map1.jpg");
 	path.push_back(L"img/map2.jpg");
 	path.push_back(L"img/map3.jpg");
@@ -8,27 +13,37 @@ GameManager::GameManager()
 }
 
 // 초기화
-void GameManager::Init()
+void GameManager::Init(HWND _hWnd)
 {
+	hWnd = _hWnd;
 	// UI
 	oldTime = GetTickCount();
 	gtime = 100000;
 	ui.SetScreenRect(screenRect);
 	
+
+	//
+	// Game Setting:
 	Point p = { 100, 100 };
 	map.push_back(Point(100, 100));
 
 	// Player
 	// 위치, 화면 크기
-	player = make_unique<Player>(p, screenRect);
+	player = make_unique<Player>(p, screenRect, hWnd);
 
 	// Enemy
 	// 위치 속도 반지름
 
-	for (int i = 0; i < 4 + select; ++i)
+	for (int i = 0; i < 4; ++i)
 	{
 		Point e = { 200 + rand() % 400, 200 + rand() % 400 };
-		enemies.push_back(make_unique<Enemy>(e, 10, 5));
+		enemies.push_back(make_unique<Enemy_Dia>(e, 5, 5));
+	}
+
+	for (int i = 0; i < select; ++i)
+	{
+		Point e = { 200 + rand() % 400, 200 + rand() % 400 };
+		enemies.push_back(make_unique<Enemy_Red>(e, 5, 5));
 	}
 
 	// Map
@@ -45,25 +60,25 @@ void GameManager::GameReset()
 	map.points.clear();
 	player.reset();
 	enemies.clear();
-	Init();
+	Init(hWnd);
 }
-
-// 주로 키입력 담당 
+ 
 void GameManager::Update()
 {
 	if (state != INGAME)
 		return;
 
 	DWORD newTime = GetTickCount();
-	
 
 	if (newTime - oldTime < 34)
 	{
 		return;
 	}
+
 	gtime -= newTime - oldTime;
 	oldTime = newTime;
 
+	// 애니메이션은 좀 더 천천히
 	static int count = 0;
 	++count;
 	if (count > 3)
@@ -79,8 +94,6 @@ void GameManager::Update()
 	if (GetKeyState(VK_SPACE) & 0x8000)
 		player->ChangeSpace(1);
 
-	player->BackTrack();
-
 	if (GetKeyState(VK_LEFT) & 0x8000)
 		player->Move(map, VK_LEFT);
 	if (GetKeyState(VK_RIGHT) & 0x8000)
@@ -90,19 +103,31 @@ void GameManager::Update()
 	if (GetKeyState(VK_DOWN) & 0x8000)
 		player->Move(map, VK_DOWN);
 
+	player->BackTrack();
 
+	// 적
 	for(int i = 0; i < enemies.size(); ++i)
 	{
-		enemies[i]->Move(map, *player);
-		enemies[i]->CheckCollisionWithScreen(screenRect);
-		//enemies[i]->CheckCollisionWithMap(map.points);
-
-		if (isInPolygon(enemies[i]->getPos(), map.points))
+		if (enemies[i]->getState() == 2)// 죽고 애니메이션도 끝
+		{
 			enemies.erase(enemies.begin() + i--);
+			continue;
+		}
+
+		enemies[i]->Move(map, *player); // 이동
+		enemies[i]->CheckCollisionWithScreen(screenRect); // 가장자리 충돌
+
+		if (enemies[i]->getState() == 0 && // 죽음
+			enemies[i]->getType() == 1 && 
+			isInPolygon(enemies[i]->getPos(), map.points))
+		{
+			enemies[i]->Transition(1);
+		}
 	}
 
+	// UI, Game 상태
 	score = getArea(map.points) * 100 / (screenRect.bottom - 10) / (screenRect.right - 10);
-	if (score > 80)
+	if (score > 80 || enemies.empty())
 	{
 		Transition(CLEAR);
 		GameReset();
@@ -143,15 +168,32 @@ void GameManager::DrawBitmapDoubleBuffering(HWND hWnd, HDC hdc)
 
 }
 
-void GameManager::DestroyEnemy()
-{
-	//enemy.reset();
-	//enemy = nullptr;
-}
-
 void GameManager::Transition(int _state)
 {
 	state = _state;
+	switch (state)
+	{
+	case START:
+		bgm.Stop();
+		bgm.Open(hWnd, TEXT("sounds/bgm.mp3"));
+		bgm.Play(100, true);
+		break;
+	case INGAME:
+		bgm.Stop();
+		bgm.Open(hWnd, TEXT("sounds/gbgm.mp3"));
+		bgm.Play(100, true);
+		break;
+	case OVER:
+		bgm.Pause();
+		effect2.Play(300, false);
+		break;
+	case CLEAR:
+		bgm.Pause();
+		effect.Play(300, false);
+	default:
+		break;
+	}
+	
 	GameReset();
 }
 
@@ -178,6 +220,7 @@ void GameManager::Select(int key)
 		select -= 4;
 }
 
+#pragma region Draw
 //GDI+
 void GameManager::GDI_Init()
 {
@@ -246,10 +289,10 @@ void GameManager::DrawStartScreen(Graphics &graphics)
 void GameManager::DrawSelectScreen(Graphics & graphics)
 {
 	Image *pImg = Image::FromFile((WCHAR*)L"img/Empty.jpg");
-	
+
 	graphics.DrawImage(pImg, 0, 0, screenRect.right, screenRect.bottom);
 	delete[] pImg;
-	
+
 	int w = 144;
 	int h = 144;
 
@@ -308,6 +351,7 @@ void GameManager::DrawClearScreen(Graphics& graphics)
 	if (pImg)
 		delete pImg;
 	static int ct = 0;
+
 	if (ct++ == 30)
 	{
 		Transition(END);
@@ -328,7 +372,7 @@ void GameManager::DrawOverScreen(Graphics& graphics)
 	int w = pImg->GetWidth();
 	int h = pImg->GetHeight();
 
-	graphics.DrawImage(pImg, Rect((screenRect.right / 2)-w, (screenRect.bottom / 2) - h, w*2, h*2),
+	graphics.DrawImage(pImg, Rect((screenRect.right / 2) - w, (screenRect.bottom / 2) - h, w * 2, h * 2),
 		0, 0,
 		w, h,
 		UnitPixel, &imgAttr);
@@ -337,7 +381,7 @@ void GameManager::DrawOverScreen(Graphics& graphics)
 		delete pImg;
 
 	static int ct = 0;
-	if (ct++ == 30)
+	if (ct++ == 100)
 	{
 		Transition(START);
 		ct = 0;
@@ -347,17 +391,6 @@ void GameManager::DrawOverScreen(Graphics& graphics)
 void GameManager::DrawEndScreen(Graphics& graphics)
 {
 	map.DrawAll(graphics, path[select]);
-	/*Image* pImg = nullptr;
-
-	pImg = Image::FromFile((WCHAR*)L"img/End.jpg");
-
-	if (!pImg)
-		return;
-
-	int w = pImg->GetWidth();
-	int h = pImg->GetHeight();
-	graphics.DrawImage(pImg, 0, 0, screenRect.right, screenRect.bottom);
-
-	if (pImg)
-		delete pImg;*/
 }
+
+#pragma endregion
