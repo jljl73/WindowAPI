@@ -21,14 +21,30 @@ void Player::Draw(Graphics &graphics)
 
 	int standard_x = 12;
 	int standard_y = 216;
-
 	int w = 38;
 	int h = 38;
-	graphics.DrawImage(pImg, Rect(pos.X - w/2 , pos.Y - h/2 , w, h),
-		standard_x + w * frame, standard_y,
-		w,h, 
-		UnitPixel, &imgAttr);
-	
+
+	if (state == HIT)
+	{
+		standard_x = 116;
+		standard_y = 252;
+
+		graphics.DrawImage(pImg, Rect(hitPos.X - w / 2, hitPos.Y - h / 2, w, h),
+			standard_x + w * (frame/2), standard_y,
+			w, h,
+			UnitPixel, &imgAttr);
+	}
+	else 
+	{
+		standard_x = 12;
+		standard_y = 216;
+
+		graphics.DrawImage(pImg, Rect(pos.X - w / 2, pos.Y - h / 2, w, h),
+			standard_x + w * frame, standard_y,
+			w, h,
+			UnitPixel, &imgAttr);
+	}
+
 	if(pImg)
 		delete[] pImg;
 
@@ -49,6 +65,9 @@ void Player::Draw(Graphics &graphics)
 
 void Player::Move(Map &map, int _d)
 {
+	if (state == HIT)
+		return;
+
 	Point tP(pos);
 	
 	int nextPointLine;
@@ -129,7 +148,7 @@ void Player::Move(Map &map, int _d)
 		if(dir != _d)
 			newPoints.push_back(pos);
 
-		if(onEdge(tP, newPoints) == -1)// 바로 뒤로 다시가는거 방지
+ 		if(onEdge(tP, newPoints) == -1)// 바로 뒤로 다시가는거 방지
 			pos = tP;
 	}
 
@@ -140,6 +159,8 @@ void Player::BackTrack()
 {
 	if (state == FIELD && !onSpace && !newPoints.empty())
 	{
+		dir = -1;
+
 		Point tp = newPoints.back();
 		if(isSame(tp, pos))
 			newPoints.erase(newPoints.end() - 1);
@@ -169,12 +190,6 @@ void Player::BackTrack()
 
 void Player::EatArea(Map &map, int end)
 {
-	//if (newPoints.size() < 2)
-	//{
-	//	newPoints.clear();
-	//	return;
-	//}
-
 	int area = getArea(newPoints);
 
 	vector<Point> mapPoints2(map.points);
@@ -185,21 +200,34 @@ void Player::EatArea(Map &map, int end)
 	int area2 = AddPoint(mapPoints2, newPoints2, end, lineIdx);
 
 	if (area2 > area1)
-		map.points = mapPoints2;
+   		map.points = mapPoints2;
 
-	//map.DeleteDuplicate();
+
+	if (area1 != 0 && area2 != 0 && area1 != area2)
+	{
+		sound.Play(500, false);
+	}
 }
 
 void Player::NextFrame()
 {
-	++frame;
-	if (frame > 6)
+	if (state == HIT && ++frame > maxframe)
+	{
+		state = EDGE;
+	}
+
+	if (state != HIT && ++frame > maxframe)
 		frame = 0;
 }
 
 void Player::Hit()
 {
 	--hp;
+	hitPos = pos;
 	pos = newPoints[0];
 	newPoints.clear();
+	state = HIT;
+	frame = 0;
+
+	sound2.Play(500, false);
 }
